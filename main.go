@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 type File struct {
@@ -47,8 +48,9 @@ func load() []File {
 
 func sha256sum(path string) string {
 	file, err := os.Open(path)
-	if err != nil {
-		panic(err)
+	if err != nil && os.IsNotExist(err) {
+		log.Fatal("File not found:", path)
+		return ""
 	}
 	defer file.Close()
 
@@ -60,44 +62,45 @@ func sha256sum(path string) string {
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
-func getFiles(directory string) []File {
-	entries, err := os.ReadDir(directory)
-
-	if err != nil {
-		panic(err)
-	}
-
+func getFiles(directory string) ([]File, error) {
 	var files []File
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		var filePath string = directory + "/" + entry.Name()
-		stat, err := os.Stat(filePath)
-
-		if err != nil {
-			panic(err)
+	e := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
 		}
 
 		files = append(files, File{
-			Name:         stat.Name(),
-			Path:         filePath,
-			ModifiedTime: stat.ModTime().String(),
-			Size:         stat.Size(),
-			Hash:         sha256sum(filePath),
+			Name:         info.Name(),
+			Path:         path,
+			ModifiedTime: info.ModTime().String(),
+			Size:         info.Size(),
+			Hash:         sha256sum(path),
 		})
+
+		return nil
+	})
+
+	if e != nil {
+		panic(e)
 	}
 
-	return files
+	return files, nil
 }
 
 func main() {
-	var files []File = getFiles("/home/ao/Downloads")
-	save(files)
+	path := "/home/ao/Downloads"
+	// path = "/nix/store"
+	files, err := getFiles(path)
 
-	// var files []File = load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// return
+
+	// save(files)
+	// // var files []File = load()
 
 	for _, file := range files {
 		log.Println(file.Name)
@@ -105,6 +108,12 @@ func main() {
 		log.Println(file.ModifiedTime)
 		log.Println(file.Size)
 		log.Println(file.Hash)
-		break
+
+		// break
 	}
+
+	// for {
+	// 	time.Sleep(1 * time.Second)
+	// 	log.Println("Checking for changes...")
+	// }
 }
