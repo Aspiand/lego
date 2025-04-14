@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -62,9 +63,7 @@ func sha256sum(path string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func getFiles(directory string) ([]File, error) {
-	var files []File
-
+func getFiles(directory string) (files []File) {
 	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -84,40 +83,52 @@ func getFiles(directory string) ([]File, error) {
 
 	if err != nil {
 		log.Fatal(err)
+		return nil
 	}
 
-	return files, nil
+	return files
 }
 
-func constaint(files []File, file File) bool {
-	for _, item := range files {
-		if item.Name == file.Name && item.Path == file.Path && item.ModifiedTime == file.ModifiedTime && item.Size == file.Size && item.Hash == file.Hash {
-			return true
+func verify(oldFiles []File, newFiles []File) (added []File, modified []File, removed []File) {
+	old, new := make(map[string]File), make(map[string]File)
+
+	for _, f := range oldFiles {
+		old[f.Path] = f
+	}
+
+	for _, f := range newFiles {
+		new[f.Path] = f
+	}
+
+	for path, oldFile := range old {
+		if _, exists := new[path]; !exists {
+			removed = append(removed, oldFile)
 		}
 	}
 
-	return false
+	for path, newFile := range new {
+		oldFile, exists := old[path]
+
+		if !exists {
+			added = append(added, newFile)
+		} else if oldFile.Hash != newFile.Hash {
+			modified = append(modified, oldFile)
+		}
+	}
+
+	return added, modified, removed
 }
 
-func verify(oldFiles []File, newFiles []File) (bool, []File) {
-	// not efficient, but works
+func dumpFiles(files []File) {
+	for _, file := range files {
+		log.Println(file.Name)
+		log.Println(file.Path)
+		log.Println(file.ModifiedTime)
+		log.Println(file.Size)
+		log.Println(file.Hash)
 
-	var newVerifiedData []File
-
-	for _, file := range newFiles {
-		if constaint(oldFiles, file) {
-			continue
-		}
-
-		newVerifiedData = append(newVerifiedData, file)
-		log.Println("New file found:", file.Path)
+		fmt.Println("-----------------------------------")
 	}
-
-	if len(newVerifiedData) != 0 {
-		return true, newVerifiedData
-	}
-
-	return false, nil
 }
 
 func main() {
@@ -127,39 +138,21 @@ func main() {
 	defer logFile.Close()
 
 	multiWriter := io.MultiWriter(os.Stdout, logFile)
-	// log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	log.SetFlags(log.Ltime | log.Lshortfile)
 	log.SetOutput(multiWriter)
 
 	verifiedData := load(savePath)
 	if verifiedData == nil {
 		log.Println("No verified data found, creating new file.")
-		verifiedData, _ = getFiles(directory)
+		verifiedData = getFiles(directory)
 		save(savePath, verifiedData)
 	} else {
 		log.Println("Verified data found, loading existing file.")
 	}
 
-	// fmt.Println(verifiedData)
-
-	// for _, file := range verifiedData {
-	// 	log.Println(file.Name)
-	// 	log.Println(file.Path)
-	// 	log.Println(file.ModifiedTime)
-	// 	log.Println(file.Size)
-	// 	log.Println(file.Hash)
-
-	// 	fmt.Println("-----------------------------------")
-	// 	// break
-	// }
-
 	for {
-		time.Sleep(10 * time.Second)
 		log.Println("Checking for changes...")
-		files, err := getFiles(directory)
-		if err != nil {
-			log.Println("Error:", err)
-			continue
-		}
+		files := getFiles(directory)
 
 		// Check files.json exists
 		if _, err := os.Stat(savePath); os.IsNotExist(err) {
@@ -168,12 +161,26 @@ func main() {
 			continue
 		}
 
-		status, newFile := verify(verifiedData, files)
-		if status {
-			verifiedData = append(verifiedData, newFile...)
-			save(savePath, verifiedData)
-		} else {
-			log.Println("No changes found.")
+		added, modified, removed := verify(verifiedData, files)
+		if changed := len(added) + len(modified) + len(removed); changed > 0 {
+			log.Printf("%d changes detected, saving to %s...", changed, savePath)
+			verifiedData = files
+			save(savePath, files)
 		}
+
+		for _, file := range added {
+			verifiedData = append(verifiedData, added...)
+			log.Printf("New file found at %s\n", file.Path)
+		}
+
+		for _, file := range modified {
+			log.Printf("File changed at %s\n", file.Path)
+		}
+
+		for _, file := range removed {
+			log.Printf("File removed at %s\n", file.Path)
+		}
+
+		time.Sleep(5 * time.Second)
 	}
 }
