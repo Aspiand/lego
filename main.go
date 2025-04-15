@@ -31,14 +31,13 @@ func save(filepath string, files []File) error {
 	return encoder.Encode(files)
 }
 
-func load(filepath string) []File {
+func load(filepath string) (files []File) {
 	file, err := os.Open(filepath)
 	if err != nil {
 		return nil
 	}
 	defer file.Close()
 
-	var files []File
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&files)
 	if err != nil {
@@ -50,14 +49,15 @@ func load(filepath string) []File {
 
 func sha256sum(path string) (string, error) {
 	file, err := os.Open(path)
-	if os.IsNotExist(err) || os.IsPermission(err) {
+	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		panic(err)
+		log.Printf("Error computing file hash for %s: %v", path, err)
+		return "", err
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
@@ -67,7 +67,11 @@ func getFiles(directory string) (files []File) {
 	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
+		} else if fi, _ := os.Lstat(path); fi.Mode()&os.ModeSymlink != 0 { // skip symbolic links
+			return nil
 		}
+
+		// log.Printf("Checking: %s", path)
 
 		hash, _ := sha256sum(path)
 		files = append(files, File{
@@ -132,14 +136,13 @@ func dumpFiles(files []File) {
 }
 
 func main() {
-	const directory string = "/home/ao/Downloads"
+	const directory string = "/home/ao/.local/share/lutris/games/zzz"
 	const savePath string = "files.json"
 	logFile, _ := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666) // err later
 	defer logFile.Close()
 
-	multiWriter := io.MultiWriter(os.Stdout, logFile)
 	log.SetFlags(log.Ltime | log.Lshortfile)
-	log.SetOutput(multiWriter)
+	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
 
 	verifiedData := load(savePath)
 	if verifiedData == nil {
@@ -169,7 +172,6 @@ func main() {
 		}
 
 		for _, file := range added {
-			verifiedData = append(verifiedData, added...)
 			log.Printf("New file found at %s\n", file.Path)
 		}
 
@@ -181,6 +183,6 @@ func main() {
 			log.Printf("File removed at %s\n", file.Path)
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(5 * time.Minute)
 	}
 }
