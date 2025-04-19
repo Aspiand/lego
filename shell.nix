@@ -8,6 +8,6 @@ pkgs.mkShell {
     [ ! -f $HOME/go/bin/gin ]; go install github.com/codegangsta/gin@latest
     export PATH=$PATH:$HOME/go/bin
     export CGO_ENABLED=1 # for gorm sqlite
-    gin -i run main.go
+    # gin -i run main.go
   '';
 }

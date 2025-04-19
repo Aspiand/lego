@@ -2,6 +2,7 @@ package database
 
 import (
 	"github.com/Aspiand/lego/models"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
