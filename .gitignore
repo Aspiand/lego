@@ -1,2 +1,4 @@
-files.json
-log.txt
+tmp/
+
+gin-bin
+database/lego.db
