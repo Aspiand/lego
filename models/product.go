@@ -1,19 +1,28 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Product struct {
-	gorm.Model
+	ID        uint   `gorm:"primaryKey" `
+	Name      string `gorm:"size:255;not null"`
+	Price     uint   `gorm:"index;not null;default:0"`
+	BrandID   uint
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 
-	Name  string `json:"name"`
-	Price uint   `json:"price"`
-
-	ProductItems []ProductItems `gorm:"foreignKey:ProductID"` // 1:n
+	Brand Brand         // belongs to relationship
+	Items []ProductItem // one to many relationship
 }
 
-type ProductItems struct {
-	gorm.Model
+type ProductItem struct {
+	ID        uint `gorm:"primaryKey"`
+	ProductID uint
+	SelledAt  time.Time
 
-	ProductID string  `json:"product_id"`
-	Product   Product `gorm:"foreignKey:ProductID;references:ID"`
+	Product Product // belongs to relationship
 }

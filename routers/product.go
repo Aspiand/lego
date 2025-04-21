@@ -1,18 +1,15 @@
 package routers
 
 import (
-	"net/http"
-
+	"github.com/Aspiand/lego/controllers"
+	"github.com/Aspiand/lego/database"
 	"github.com/gin-gonic/gin"
 )
 
 func registerProductRoutes(rg *gin.Engine) {
 	product := rg.Group("/products")
+	controller := controllers.NewProductController(database.Get())
 	{
-		product.GET("/", func(ctx *gin.Context) {
-			ctx.IndentedJSON(http.StatusOK, gin.H{
-				"message": "ehe",
-			})
-		})
+		product.GET("/", controller.GetAll)
 	}
 }

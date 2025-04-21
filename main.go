@@ -3,9 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/Aspiand/lego/database"
 	"github.com/Aspiand/lego/routers"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,7 +14,6 @@ func main() {
 	})
 
 	routers.SetupRouters(router)
-	database.Init()
 
 	router.Run("0.0.0.0:8000")
 }
