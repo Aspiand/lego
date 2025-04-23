@@ -16,36 +16,40 @@ func NewBrandController(db *gorm.DB) *BrandController {
 	return &BrandController{DB: db}
 }
 
-func (ctl BrandController) GetAll(ctx *gin.Context) {
+func (ctl BrandController) GetAll(c *gin.Context) {
 	var brands []models.Brand
-	ctl.DB.Find(&brands)
+	ctx := c.Request.Context()
 
-	ctx.IndentedJSON(http.StatusOK, brands)
+	if err := ctl.DB.WithContext(ctx).Find(&brands).Error; err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+
+	c.IndentedJSON(http.StatusOK, brands)
 }
 
-func (ctl BrandController) Create(ctx *gin.Context) { // test later
+func (ctl BrandController) Create(c *gin.Context) {
 	var brand models.Brand
 
-	if err := ctx.ShouldBindJSON(&brand); err != nil {
-		ctx.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := c.ShouldBindJSON(&brand); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	if err := ctl.DB.Create(&brand).Error; err != nil {
-		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusCreated, brand)
+	c.IndentedJSON(http.StatusCreated, brand)
 }
 
-func (ctl BrandController) Delete(ctx *gin.Context) { // later
-	id := ctx.Param("id")
+func (ctl BrandController) Delete(c *gin.Context) { // later
+	id := c.Param("id")
 
 	if err := ctl.DB.Delete(&models.Brand{}, id).Error; err != nil {
-		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.Status(http.StatusNoContent)
+	c.Status(http.StatusNoContent)
 }

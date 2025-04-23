@@ -2,14 +2,15 @@ package routers
 
 import (
 	"github.com/Aspiand/lego/controllers"
-	"github.com/Aspiand/lego/database"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func registerProductRoutes(rg *gin.Engine) {
+func registerProductRoutes(db *gorm.DB, rg *gin.Engine) {
 	product := rg.Group("/products")
-	controller := controllers.NewProductController(database.Get())
+	controller := controllers.NewProductController(db)
 	{
 		product.GET("/", controller.GetAll)
+		product.DELETE("/", controller.DeleteAll)
 	}
 }

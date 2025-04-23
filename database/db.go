@@ -6,23 +6,17 @@ import (
 	"gorm.io/gorm"
 )
 
-var db *gorm.DB
-
-func Init() {
-	var err error
-	db, err = gorm.Open(sqlite.Open("database/lego.db"), &gorm.Config{})
-
+func Initialize(destination string) *gorm.DB {
+	db, err := gorm.Open(sqlite.Open(destination), &gorm.Config{})
 	if err != nil {
-		panic(err)
+		panic("Can't connect to database")
 	}
 
-	db.AutoMigrate(&models.Brand{}, &models.Product{})
-}
-
-func Get() *gorm.DB {
-	if db == nil {
-		Init()
-	}
+	db.AutoMigrate(
+		&models.Brand{},
+		&models.Product{},
+		&models.ProductItem{},
+	)
 
 	return db
 }

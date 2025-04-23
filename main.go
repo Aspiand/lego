@@ -1,19 +1,17 @@
 package main
 
 import (
-	"net/http"
-
+	"github.com/Aspiand/lego/database"
 	"github.com/Aspiand/lego/routers"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	dst := "file::memory:?cache=shared"
+	// dst = "database/lego.db"
+
+	db := database.Initialize(dst)
 	router := gin.Default()
-	router.GET("/ping", func(c *gin.Context) {
-		c.IndentedJSON(http.StatusOK, gin.H{"message": "pong"})
-	})
-
-	routers.SetupRouters(router)
-
+	routers.SetupRouters(db, router)
 	router.Run("0.0.0.0:8000")
 }
