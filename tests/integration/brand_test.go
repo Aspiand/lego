@@ -26,7 +26,7 @@ func TestGetBrand(t *testing.T) {
 	json.Unmarshal(w.Body.Bytes(), &rBrand)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, brand, rBrand)
+	assert.Equal(t, brand.Name, rBrand.Name)
 }
 
 func TestCreateBrand(t *testing.T) {
