@@ -83,6 +83,7 @@ func (ctl BrandController) DeleteAll(c *gin.Context) {
 
 	if result.Error != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, result.RowsAffected)
