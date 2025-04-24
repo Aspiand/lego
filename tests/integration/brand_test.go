@@ -31,9 +31,10 @@ func TestGetBrand(t *testing.T) {
 
 func TestCreateBrand(t *testing.T) {
 	_, router := SetupTest()
-	brandName := "Intel"
 
+	brandName := "Intel"
 	payload := toJSONReader(models.Brand{Name: brandName})
+
 	req, _ := http.NewRequest("POST", "/brands", payload)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -50,8 +51,8 @@ func TestUpdateBrand(t *testing.T) {
 	db, router := SetupTest()
 
 	db.Create(&models.Brand{Name: "ehe"})
-
 	payload := toJSONReader(models.Brand{Name: "EHE"})
+
 	req, _ := http.NewRequest("PUT", "/brands/1", payload)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -84,7 +85,7 @@ func TestDeleteBrand(t *testing.T) {
 func TestDeleteAllBrand(t *testing.T) {
 	db, router := SetupTest()
 
-	var brands = []*models.Brand{
+	var brands = []models.Brand{
 		{Name: "AMD"},
 		{Name: "Intel"},
 		{Name: "Axioo"},
