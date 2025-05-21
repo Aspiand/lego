@@ -5,8 +5,8 @@ pkgs.mkShell {
 
   shellHook = ''
     [ ! -f $(pwd)/tmp ]; mkdir -p tmp/
-    [ ! -f $HOME/go/bin/gin ]; go install github.com/codegangsta/gin@latest
-    export PATH=$PATH:$HOME/go/bin
+    [ ! -f $GOPATH/bin/gin ]; go install github.com/codegangsta/gin@latest
+    export PATH=$PATH:$GOPATH/bin
     export CGO_ENABLED=1 # for gorm sqlite
     # gin -i run main.go
   '';

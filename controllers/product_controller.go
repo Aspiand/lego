@@ -3,7 +3,7 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/Aspiand/lego/models"
+	"github.com/Aspiand/lego/internal/models"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
