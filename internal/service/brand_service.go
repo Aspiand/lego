@@ -26,7 +26,10 @@ func (s *BrandService) Create(ctx context.Context, brand *models.Brand) error {
 }
 
 func (s *BrandService) Update(ctx context.Context, id int, brand models.Brand) error {
-	if err := s.db.WithContext(ctx).Model(&models.Brand{}).Where("id = ?", id).Updates(brand).Error; err != nil {
+	if err := s.db.WithContext(ctx).
+		Model(&models.Brand{}).
+		Where("id = ?", id).
+		Updates(brand).Error; err != nil {
 		return err
 	}
 
@@ -41,18 +44,21 @@ func (s *BrandService) Delete(ctx context.Context, id int) error {
 	return nil
 }
 
-func (s *BrandService) List(ctx context.Context, page int, pageSize int) ([]models.Brand, int64, error) {
+func (s *BrandService) List(ctx context.Context, name string, page int, pageSize int) ([]models.Brand, error) {
 	var brands []models.Brand
-	var total int64
 
-	if err := s.db.WithContext(ctx).Offset((page - 1) * pageSize).Limit(pageSize).Find(&brands).Count(&total).Error; err != nil {
-		return nil, 0, err
+	if err := s.db.WithContext(ctx).
+		Offset((page-1)*pageSize).
+		Limit(pageSize).
+		Where("name LIKE ?", "%"+name+"%"). // TODO: Handler later
+		Find(&brands).Error; err != nil {
+		return nil, err
 	}
 
-	return brands, total, nil
+	return brands, nil
 }
 
-func (s *BrandService) GetByID(ctx context.Context, id uint) (*models.Brand, error) {
+func (s *BrandService) GetByID(ctx context.Context, id int) (*models.Brand, error) {
 	var brand models.Brand
 
 	if err := s.db.WithContext(ctx).First(&brand, id).Error; err != nil {
@@ -60,31 +66,4 @@ func (s *BrandService) GetByID(ctx context.Context, id uint) (*models.Brand, err
 	}
 
 	return &brand, nil
-}
-
-func (s *BrandService) GetByName(ctx context.Context, name string) (*models.Brand, error) {
-	var brand models.Brand
-
-	if err := s.db.WithContext(ctx).Where("name = ?", name).First(&brand).Error; err != nil {
-		return nil, err
-	}
-
-	return &brand, nil
-}
-
-func (s *BrandService) Search(ctx context.Context, name string, page, pageSize int) ([]models.Brand, int64, error) {
-	var brands []models.Brand
-	var total int64
-
-	err := s.db.WithContext(ctx).Model(&models.Brand{}).Where("name LIKE ?", "%"+name+"%").Count(&total).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	err = s.db.WithContext(ctx).Where("name LIKE ?", "%"+name+"%").Offset((page - 1) * pageSize).Limit(pageSize).Find(&brands).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return brands, total, nil
 }

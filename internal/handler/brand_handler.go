@@ -35,7 +35,7 @@ func (h *BrandHandler) ListBrands(c *gin.Context) {
 	defer cancel()
 
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
-	if err != nil && page < 1 {
+	if err != nil && page <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page number"})
 		return
 	}
@@ -46,7 +46,10 @@ func (h *BrandHandler) ListBrands(c *gin.Context) {
 		return
 	}
 
-	brands, total, err := h.service.List(ctx, page, pageSize)
+	brandName := c.DefaultQuery("name", "")
+
+	brands, err := h.service.List(ctx, brandName, page, pageSize)
+
 	if err != nil {
 		// if errors.Is(err, context.DeadlineExceeded) {}
 
@@ -54,10 +57,7 @@ func (h *BrandHandler) ListBrands(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"brands": brands,
-		"total":  total,
-	})
+	c.JSON(http.StatusOK, brands)
 }
 
 func (h *BrandHandler) GetById(c *gin.Context) {
@@ -68,7 +68,7 @@ func (h *BrandHandler) GetById(c *gin.Context) {
 	if err != nil {
 	}
 
-	brand, err := h.service.GetByID(ctx, uint(brandID))
+	brand, err := h.service.GetByID(ctx, brandID)
 	if err != nil {
 	}
 
